@@ -23,7 +23,10 @@ export async function GET(request: NextRequest) {
   }
 
   if (error) {
-    return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error)}`);
+    // Typical cause: the link was opened in a different browser than the one used to sign up
+    // (PKCE verifier cookie missing). The email is usually confirmed anyway.
+    const msg = `We couldn't sign you in from that link (${error}). If you already confirmed your email, just sign in below.`;
+    return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(msg)}`);
   }
   return NextResponse.redirect(`${origin}${next}`);
 }
