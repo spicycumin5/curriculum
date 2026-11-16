@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Curriculum
 
-## Getting Started
+A school-style planner for self-study. Make **courses** and split them into **units**. Fill each unit with things to **read / watch / do**, with **deadlines**. You can share a course with friends, and each person tracks their own progress.
 
-First, run the development server:
+- **Dashboard:** your courses with progress bars, plus what's overdue and what's due in the next 7 days.
+- **Calendar:** a month view of every deadline, which you can filter by course. An agenda list sits below it.
+- **Course page:** a checklist of each unit's resources. **Edit** mode lets you add, edit, reorder and delete units and items.
+- **Sharing:** invite links that make someone a *viewer* (follows along) or an *editor* (can change the content).
+- **Import/Export:** courses as JSON. Claude can write these for you (see below).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Stack: Next.js 15 · Supabase (Postgres, Auth, Row-Level Security) · Tailwind CSS · zod · date-fns.
+
+## Setup
+
+1. **Create a Supabase project** at supabase.com (the free tier is fine).
+2. **Environment:** copy `.env.example` to `.env.local`. Fill in the project URL and publishable (anon) key from *Project Settings → API*. For the CLI import and RLS check, also add the service-role key.
+3. **Database:** apply the schema in one of two ways:
+   - CLI: `npx supabase login`, then `npx supabase link --project-ref <ref>`, then `npm run db:push`
+   - or paste `supabase/migrations/20261115000000_init.sql` into the dashboard's SQL editor and run it.
+4. **Auth URLs:** in *Authentication → URL Configuration*, set Site URL to `http://localhost:3000`. Add `http://localhost:3000/**` (and later your Vercel URL + `/**`) to the Redirect URLs.
+5. Run `npm install`, then `npm run dev`, then open http://localhost:3000.
+
+Optional check: `npm run rls-check` creates two temporary users and verifies the sharing and permission rules against your database (about 30 checks). It then deletes the users.
+
+> **Running Supabase locally instead:** start Docker Desktop, run `npx supabase start`, and use the URL and keys it prints.
+
+## Getting Claude to build a course
+
+In Claude Code, from this folder, ask something like:
+
+> Build me a 6-week intro to Rust starting Jan 5, about 4 hours a week. I already know Python.
+
+Claude writes `curricula/<name>.json` and validates it. Then you import it from the **Import** page, or run `npm run import -- curricula/<name>.json --owner you@example.com`. After that, edit it freely in the app. The file format is described in [`docs/course-format.md`](docs/course-format.md). `curricula/example-linear-algebra.json` is a ready-made sample.
+
+## Deploying (Vercel)
+
+Import the repo in Vercel. Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` and `NEXT_PUBLIC_SITE_URL`. **Don't** add the service-role key. Then add the Vercel URL to Supabase's redirect URLs.
+
+## Development
+
+```sh
+npm test            # unit tests (schema, dates, progress)
+npm run lint
+npm run typecheck
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+> This folder is inside OneDrive. Syncing `node_modules` and `.next` is slow. Consider excluding them, or moving the project outside OneDrive.
