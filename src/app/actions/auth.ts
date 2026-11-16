@@ -25,8 +25,52 @@ export async function signIn(_prev: ActionResult, formData: FormData): Promise<A
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: error.message };
+  if (error) {
+    if (error.code === "invalid_credentials") {
+      return { error: "Wrong email or password. Forgot your password? Use “Forgot password?” below to reset it." };
+    }
+    if (error.code === "email_not_confirmed") {
+      return { error: "Please confirm your email first. Check your inbox for the confirmation link." };
+    }
+    return { error: error.message };
+  }
   redirect(safeNext(formData.get("next")));
+}
+
+/** Implicit-flow client so emailed links work in any browser/device (see /auth/confirm). */
+function linkClient() {
+  const { url, key } = supabaseEnv();
+  return createPlainClient(url, key, {
+    auth: { flowType: "implicit", persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
+}
+
+export async function requestPasswordReset(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) return { error: "Enter your email." };
+  const { error } = await linkClient().auth.resetPasswordForEmail(email, {
+    redirectTo: `${await origin()}/auth/confirm?next=${encodeURIComponent("/reset-password")}`,
+  });
+  // Don't reveal whether the address has an account; only surface rate limits.
+  if (error && /rate limit|too many/i.test(error.message)) {
+    return { error: "Too many emails were sent recently. Please wait a few minutes and try again." };
+  }
+  return { ok: true };
+}
+
+export async function updatePassword(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+  if (password.length < 8) return { error: "Use at least 8 characters." };
+  if (password !== confirm) return { error: "The two passwords don't match." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Your reset link has expired. Request a new one from the sign-in page." };
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { error: error.message };
+  redirect("/dashboard");
 }
 
 export async function signUp(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -38,11 +82,7 @@ export async function signUp(_prev: ActionResult, formData: FormData): Promise<A
   const next = safeNext(formData.get("next"));
   // Implicit flow (not PKCE) for sign-up: the confirmation link then works in any browser or device,
   // because it doesn't depend on a code-verifier cookie from the browser that signed up.
-  const { url, key } = supabaseEnv();
-  const signupClient = createPlainClient(url, key, {
-    auth: { flowType: "implicit", persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-  });
-  const { data, error } = await signupClient.auth.signUp({
+  const { data, error } = await linkClient().auth.signUp({
     email,
     password,
     options: {

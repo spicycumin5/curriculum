@@ -50,7 +50,7 @@ export function HashSession({ next }: { next: string }) {
       <h1 className="font-serif text-2xl font-semibold">{state.status === "error" ? "That link didn't work" : "Link incomplete"}</h1>
       <p className="text-sm text-muted">
         {state.message ? `${state.message}. ` : ""}
-        Confirmation links work once. If you already clicked it, your email is confirmed: just sign in.
+        Email links work once. If you already used this one, just sign in (or request a new password-reset link from the sign-in page).
       </p>
       <Link href="/login" className="btn btn-primary mx-auto">Go to sign in</Link>
     </>
