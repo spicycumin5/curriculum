@@ -11,16 +11,19 @@ import {
   updateItem,
   updateUnit,
 } from "@/app/actions/courses";
-import { RoleBadge, formatMinutes } from "@/components/badges";
+import { DueLabel, KindBadge, formatMinutes } from "@/components/badges";
 import { AddItem, AddUnit, ItemRow, UnitEditor } from "@/components/course";
+import { CourseHeader } from "@/components/CourseHeader";
+import { IconChevron, IconClock, IconPin } from "@/components/icons";
+import { LocationText } from "@/components/schedule";
 import { ProgressBar } from "@/components/ui";
-import { effectiveDue, formatDate, formatRange } from "@/lib/dates";
-import { courseProgress, unitProgress } from "@/lib/progress";
+import { effectiveDue, formatDate } from "@/lib/dates";
+import { courseProgress, nextItems, unitProgress } from "@/lib/progress";
 import { getCourses } from "@/lib/queries";
+import { formatTimeRange, nextSession, sessionsOn } from "@/lib/schedule";
 import { requireUser } from "@/lib/supabase/server";
 import { getToday } from "@/lib/today";
 import { ROLE_RANK } from "@/lib/types";
-import { formatTimeRange, nextSession, sessionsOn, summarizeSchedule } from "@/lib/schedule";
 
 export default async function CoursePage({
   params,
@@ -42,151 +45,198 @@ export default async function CoursePage({
   const editing = canEdit && edit === "1";
   const overall = courseProgress(course, done);
   const totalMinutes = course.units.flatMap((u) => u.items).reduce((s, i) => s + (i.est_minutes ?? 0), 0);
-  const range = formatRange(course.start_date, course.end_date);
-  const schedule = summarizeSchedule(course.meetings);
   const todaysClass = sessionsOn([course], today)[0];
   const upcomingClass = todaysClass ?? nextSession(course, today);
+  const upNext = nextItems(course, done, 4);
 
   return (
     <div className="grid gap-6">
-      <header className="card overflow-hidden">
-        <div className="h-2" style={{ background: course.color }} />
-        <div className="grid gap-4 p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="font-serif text-3xl font-semibold tracking-tight break-words">{course.title}</h1>
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted">
-                <RoleBadge role={course.role} />
-                {range && <span>{range}</span>}
-                {totalMinutes > 0 && <span>· ~{formatMinutes(totalMinutes)} total</span>}
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {canEdit && (
-                <Link href={editing ? `/courses/${id}` : `/courses/${id}?edit=1`} className={`btn ${editing ? "btn-primary" : ""}`}>
-                  {editing ? "Done editing" : "Edit"}
-                </Link>
-              )}
-              <Link href={`/courses/${id}/settings`} className="btn">
-                {course.role === "owner" ? "Settings & sharing" : "Course info"}
+      <CourseHeader course={course} tab="modules" />
+
+      {course.description && <p className="max-w-prose whitespace-pre-wrap text-muted">{course.description}</p>}
+
+      <div className="grid gap-8 lg:grid-cols-[1fr_17rem]">
+        <section aria-labelledby="modules-h" className="grid content-start gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="modules-h" className="font-serif text-2xl font-semibold">Modules</h2>
+            {canEdit && (
+              <Link href={editing ? `/courses/${id}` : `/courses/${id}?edit=1`} className={`btn ${editing ? "btn-primary" : ""}`}>
+                {editing ? "Done editing" : "Edit modules"}
               </Link>
-            </div>
+            )}
           </div>
-          {course.description && <p className="max-w-prose whitespace-pre-wrap text-muted">{course.description}</p>}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg bg-surface-2 px-3 py-2 text-sm">
-            <span aria-hidden>🗓</span>
-            {schedule ? (
-              <>
-                <span className="font-medium">{schedule}</span>
-                {upcomingClass && (
-                  <span className={todaysClass ? "font-medium text-accent" : "text-muted"}>
-                    {todaysClass ? "Class today" : `Next class ${formatDate(upcomingClass.date)}`}
-                    {upcomingClass.start && ` · ${formatTimeRange(upcomingClass.start, upcomingClass.end)}`}
-                  </span>
+
+          {course.units.length === 0 && !editing && (
+            <div className="card grid justify-items-start gap-3 p-6">
+              <p className="text-muted">This course has no modules yet. A module is a chunk of the course, usually one week, with its readings, videos and assignments.</p>
+              {canEdit && (
+                <Link href={`/courses/${id}?edit=1`} className="btn btn-primary">Add the first module</Link>
+              )}
+            </div>
+          )}
+
+          <ol className="grid gap-4">
+            {course.units.map((unit, ui) => {
+              const p = unitProgress(unit, done);
+              const complete = p.total > 0 && p.completed === p.total;
+              return (
+                <li key={unit.id} className="card overflow-hidden">
+                  <details open={!complete || editing} className="group">
+                    <summary className="flex cursor-pointer list-none items-center gap-3 border-b border-line bg-surface-2 px-4 py-3 [&::-webkit-details-marker]:hidden">
+                      <IconChevron className="size-4 text-muted transition-transform group-open:rotate-90" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-muted">Module {ui + 1}</p>
+                        <h3 className="font-serif text-lg leading-snug font-semibold break-words">{unit.title}</h3>
+                        <p className="flex flex-wrap gap-x-3 text-xs text-muted sm:hidden">
+                          {unit.due_date && <DueLabel due={unit.due_date} done={complete} today={today} />}
+                          {p.total > 0 && <span className={complete ? "font-semibold text-ok" : ""}>{complete ? "Complete" : `${p.completed} of ${p.total} done`}</span>}
+                        </p>
+                      </div>
+                      <div className="hidden text-right text-xs text-muted sm:block">
+                        {unit.due_date && (
+                          <p>
+                            <DueLabel due={unit.due_date} done={complete} today={today} />
+                          </p>
+                        )}
+                        {p.total > 0 && (
+                          <p className={complete ? "font-semibold text-ok" : ""}>
+                            {complete ? "Complete" : `${p.completed} of ${p.total} done`}
+                          </p>
+                        )}
+                      </div>
+                    </summary>
+                    {(unit.description || unit.start_date) && (
+                      <div className="border-b border-line px-4 py-2 text-sm text-muted">
+                        {unit.start_date && (
+                          <p>
+                            {formatDate(unit.start_date, "MMM d")}
+                            {unit.due_date ? ` to ${formatDate(unit.due_date, "MMM d")}` : ""}
+                          </p>
+                        )}
+                        {unit.description && <p className="whitespace-pre-wrap">{unit.description}</p>}
+                      </div>
+                    )}
+                    {editing && (
+                      <div className="border-b border-line px-4 pb-3">
+                        <UnitEditor
+                          unit={unit}
+                          isFirst={ui === 0}
+                          isLast={ui === course.units.length - 1}
+                          edit={{
+                            update: updateUnit.bind(null, unit.id),
+                            remove: deleteUnit.bind(null, unit.id),
+                            move: moveUnit.bind(null, unit.id),
+                          }}
+                        />
+                      </div>
+                    )}
+                    {unit.items.length > 0 ? (
+                      <ul className="divide-y divide-line">
+                        {unit.items.map((item, ii) => (
+                          <ItemRow
+                            key={item.id}
+                            item={item}
+                            due={effectiveDue(item, unit)}
+                            done={done.has(item.id)}
+                            today={today}
+                            color={course.color}
+                            toggle={toggleItem.bind(null, item.id)}
+                            isFirst={ii === 0}
+                            isLast={ii === unit.items.length - 1}
+                            edit={
+                              editing
+                                ? {
+                                    update: updateItem.bind(null, item.id),
+                                    remove: deleteItem.bind(null, item.id),
+                                    move: moveItem.bind(null, item.id),
+                                  }
+                                : undefined
+                            }
+                          />
+                        ))}
+                      </ul>
+                    ) : (
+                      !editing && <p className="px-4 py-3 text-sm text-muted">No items in this module yet.</p>
+                    )}
+                    {editing && (
+                      <div className="px-4 pb-4">
+                        <AddItem action={addItem.bind(null, unit.id)} />
+                      </div>
+                    )}
+                  </details>
+                </li>
+              );
+            })}
+          </ol>
+
+          {editing && <AddUnit action={addUnit.bind(null, course.id)} />}
+        </section>
+
+        <aside className="grid content-start gap-8" aria-label="Course overview">
+          <section className="panel">
+            <h2 className="panel-title">Your progress</h2>
+            <p className="mb-2 font-serif text-3xl font-bold tabular-nums">
+              {overall.pct}%
+              <span className="ml-2 font-sans text-sm font-normal text-muted">
+                {overall.completed} of {overall.total} items
+              </span>
+            </p>
+            <ProgressBar pct={overall.pct} color={course.color} label="Course progress" />
+            {totalMinutes > 0 && <p className="mt-2 text-xs text-muted">About {formatMinutes(totalMinutes)} of work in total.</p>}
+          </section>
+
+          <section className="panel">
+            <h2 className="panel-title">{todaysClass ? "Class today" : "Next class"}</h2>
+            {upcomingClass ? (
+              <div className="grid gap-1 text-sm">
+                <p className={todaysClass ? "font-semibold" : ""}>
+                  {todaysClass ? <span className="today-mark">Today</span> : formatDate(upcomingClass.date, "EEEE, MMM d")}
+                </p>
+                {upcomingClass.start && (
+                  <p className="flex items-center gap-1.5 text-muted">
+                    <IconClock className="size-4" />
+                    {formatTimeRange(upcomingClass.start, upcomingClass.end)}
+                  </p>
                 )}
-              </>
+                {upcomingClass.location && (
+                  <p className="flex items-center gap-1.5 text-muted">
+                    <IconPin className="size-4" />
+                    <LocationText location={upcomingClass.location} />
+                  </p>
+                )}
+              </div>
             ) : (
-              <span className="text-muted">No weekly class days set.</span>
+              <p className="text-sm text-muted">No weekly class days set.</p>
             )}
             {canEdit && (
-              <Link href={`/courses/${id}/settings#schedule`} className="text-accent hover:underline">
-                {schedule ? "Edit schedule" : "Set class days"}
+              <Link href={`/courses/${id}/settings#schedule`} className="link mt-2 inline-block text-sm">
+                {course.meetings.length ? "Edit class schedule" : "Set class days"}
               </Link>
             )}
-          </div>
-          <div className="grid gap-1.5">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted">Your progress</span>
-              <span className="font-medium tabular-nums">
-                {overall.completed}/{overall.total} · {overall.pct}%
-              </span>
-            </div>
-            <ProgressBar pct={overall.pct} color={course.color} />
-          </div>
-        </div>
-      </header>
+          </section>
 
-      {course.units.length === 0 && !editing && (
-        <div className="card p-8 text-center text-muted">
-          <p>This course has no units yet.</p>
-          {canEdit && (
-            <Link href={`/courses/${id}?edit=1`} className="btn btn-primary mt-4">
-              Add the first unit
-            </Link>
+          {upNext.length > 0 && (
+            <section className="panel">
+              <h2 className="panel-title">Up next</h2>
+              <ul className="grid gap-2 text-sm">
+                {upNext.map((t) => (
+                  <li key={t.id} className="flex items-start gap-2">
+                    <span className="mt-0.5"><KindBadge kind={t.kind} /></span>
+                    <span className="min-w-0">
+                      <span className="block leading-snug">{t.title}</span>
+                      {t.due && (
+                        <span className="text-xs">
+                          <DueLabel due={t.due} done={false} today={today} />
+                        </span>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
-        </div>
-      )}
-
-      <ol className="grid gap-4">
-        {course.units.map((unit, ui) => {
-          const p = unitProgress(unit, done);
-          return (
-            <li key={unit.id} className="card p-5">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-xs font-medium tracking-wider text-muted uppercase">Unit {ui + 1}</p>
-                  <h2 className="font-serif text-xl font-semibold break-words">{unit.title}</h2>
-                </div>
-                <div className="text-right text-sm text-muted">
-                  {unit.start_date && <span>{formatDate(unit.start_date, "MMM d")} → </span>}
-                  {unit.due_date ? <span>due {formatDate(unit.due_date)}</span> : unit.start_date ? <span>…</span> : null}
-                </div>
-              </div>
-              {unit.description && <p className="mt-1 text-sm whitespace-pre-wrap text-muted">{unit.description}</p>}
-              {p.total > 0 && (
-                <div className="mt-3 flex items-center gap-3">
-                  <ProgressBar pct={p.pct} color={course.color} label={`${unit.title} progress`} />
-                  <span className="shrink-0 text-xs text-muted tabular-nums">
-                    {p.completed}/{p.total}
-                  </span>
-                </div>
-              )}
-              {editing && (
-                <UnitEditor
-                  unit={unit}
-                  isFirst={ui === 0}
-                  isLast={ui === course.units.length - 1}
-                  edit={{
-                    update: updateUnit.bind(null, unit.id),
-                    remove: deleteUnit.bind(null, unit.id),
-                    move: moveUnit.bind(null, unit.id),
-                  }}
-                />
-              )}
-              {unit.items.length > 0 && (
-                <ul className="mt-2 divide-y divide-line">
-                  {unit.items.map((item, ii) => (
-                    <ItemRow
-                      key={item.id}
-                      item={item}
-                      due={effectiveDue(item, unit)}
-                      done={done.has(item.id)}
-                      today={today}
-                      color={course.color}
-                      toggle={toggleItem.bind(null, item.id)}
-                      isFirst={ii === 0}
-                      isLast={ii === unit.items.length - 1}
-                      edit={
-                        editing
-                          ? {
-                              update: updateItem.bind(null, item.id),
-                              remove: deleteItem.bind(null, item.id),
-                              move: moveItem.bind(null, item.id),
-                            }
-                          : undefined
-                      }
-                    />
-                  ))}
-                </ul>
-              )}
-              {unit.items.length === 0 && !editing && <p className="mt-3 text-sm text-muted">No resources yet.</p>}
-              {editing && <AddItem action={addItem.bind(null, unit.id)} />}
-            </li>
-          );
-        })}
-      </ol>
-
-      {editing && <AddUnit action={addUnit.bind(null, course.id)} />}
+        </aside>
+      </div>
     </div>
   );
 }

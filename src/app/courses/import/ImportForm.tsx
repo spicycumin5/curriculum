@@ -62,17 +62,16 @@ export function ImportForm() {
           <div className="h-1.5" style={{ background: course.color ?? "var(--accent)" }} />
           <div className="grid gap-3 p-5">
             <div>
-              <p className="text-xs font-medium tracking-wider text-muted uppercase">Preview</p>
               <h2 className="font-serif text-xl font-semibold">{course.title}</h2>
-              <p className="text-sm text-muted">
-                {course.units.length} units · {itemCount} items
-                {minutes > 0 && <> · ~{formatMinutes(minutes)}</>}
-                {course.start_date && <> · {course.start_date} → {course.end_date ?? "…"}</>}
-              </p>
+              <ul className="mt-1 flex flex-wrap gap-x-4 text-sm text-muted">
+                <li>{course.units.length} modules</li>
+                <li>{itemCount} items</li>
+                {minutes > 0 && <li>About {formatMinutes(minutes)} of work</li>}
+                {course.start_date && <li>{course.start_date} to {course.end_date ?? "open-ended"}</li>}
+              </ul>
               {course.schedule.length > 0 && (
                 <p className="text-sm text-muted">
-                  🗓{" "}
-                  {summarizeSchedule(
+                  Class days: {summarizeSchedule(
                     course.schedule.map((m) => ({ weekday: dayKeyToNumber(m.day), start_time: m.start ?? null, end_time: m.end ?? null })),
                   )}
                 </p>
@@ -85,7 +84,7 @@ export function ImportForm() {
                     {i + 1}. {u.title}
                   </span>
                   <span className="shrink-0 text-muted">
-                    {u.items.length} items{u.due_date && <> · due {u.due_date}</>}
+                    {u.items.length} items{u.due_date && <>, due {u.due_date}</>}
                   </span>
                 </li>
               ))}

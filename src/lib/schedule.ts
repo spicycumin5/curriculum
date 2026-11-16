@@ -58,7 +58,7 @@ export function summarizeSchedule(meetings: Pick<Meeting, "weekday" | "start_tim
   return [...groups.entries()]
     .map(([time, days]) => {
       const dayList = [...new Set(days)].map((d) => WEEKDAYS[d - 1].short).join(", ");
-      return time ? `${dayList} · ${time}` : dayList;
+      return time ? `${dayList} at ${time}` : dayList;
     })
     .join("; ");
 }

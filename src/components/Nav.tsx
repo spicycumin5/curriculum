@@ -1,43 +1,46 @@
-import Link from "next/link";
 import { signOut } from "@/app/actions/auth";
+import { initials } from "@/lib/course-style";
 import { createClient } from "@/lib/supabase/server";
+import { IconLogout } from "./icons";
+import { RailLinks } from "./RailLinks";
 
+/** Canvas-style global navigation: a navy rail on desktop, a bottom tab bar on phones. */
 export async function Nav() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) return null;
+  const name = (user.user_metadata?.display_name as string | undefined) || user.email || "You";
 
   return (
-    <header className="border-b border-line bg-surface/80 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
-        <Link href={user ? "/dashboard" : "/login"} className="font-serif text-xl font-semibold tracking-tight">
-          Curriculum
-        </Link>
-        {user && (
-          <>
-            <nav className="flex flex-1 flex-wrap items-center gap-1 text-sm">
-              <NavLink href="/dashboard">Dashboard</NavLink>
-              <NavLink href="/week">Week</NavLink>
-              <NavLink href="/calendar">Calendar</NavLink>
-              <NavLink href="/courses/new">New course</NavLink>
-              <NavLink href="/courses/import">Import</NavLink>
-            </nav>
-            <form action={signOut} className="flex items-center gap-3 text-sm text-muted">
-              <span className="hidden max-w-48 truncate sm:inline">{user.email}</span>
-              <button className="btn btn-sm">Sign out</button>
-            </form>
-          </>
-        )}
-      </div>
-    </header>
-  );
-}
+    <>
+      <nav
+        aria-label="Main"
+        className="fixed inset-y-0 left-0 z-30 hidden w-[84px] flex-col items-center bg-rail py-4 text-rail-ink md:flex"
+      >
+        <span
+          className="mb-5 grid size-11 place-items-center rounded-full bg-highlight font-serif text-lg font-bold text-highlight-ink"
+          title={`${name} (${user.email})`}
+          aria-label={`Signed in as ${user.email}`}
+        >
+          {initials(name)}
+        </span>
+        <RailLinks variant="rail" />
+        <form action={signOut} className="mt-auto">
+          <button className="flex w-[76px] flex-col items-center gap-1 rounded-md py-2 text-[11px] font-semibold hover:bg-rail-hover hover:text-white">
+            <IconLogout className="size-6" />
+            Sign out
+          </button>
+        </form>
+      </nav>
 
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link href={href} className="rounded-md px-2.5 py-1.5 text-muted hover:bg-surface-2 hover:text-ink">
-      {children}
-    </Link>
+      <nav
+        aria-label="Main"
+        className="fixed inset-x-0 bottom-0 z-30 flex border-t border-white/10 bg-rail px-1 pb-[env(safe-area-inset-bottom)] text-rail-ink md:hidden"
+      >
+        <RailLinks variant="bar" />
+      </nav>
+    </>
   );
 }

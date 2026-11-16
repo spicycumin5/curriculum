@@ -45,7 +45,7 @@ export function collectDeadlines(courses: CourseWithContent[], done: ReadonlySet
         out.push({
           kind: "unit",
           id: u.id,
-          title: `${u.title} (unit due)`,
+          title: `${u.title} (module due)`,
           due: u.due_date,
           done: p.total > 0 && p.completed === p.total,
           courseId: c.id,

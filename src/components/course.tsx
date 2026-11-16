@@ -2,7 +2,8 @@
 
 import { useOptimistic, useState, useTransition } from "react";
 import type { ActionResult, Item, Unit } from "@/lib/types";
-import { DueLabel, KindBadge, formatMinutes } from "./badges";
+import { DueLabel, KindBadge, formatMinutes, kindLabel } from "./badges";
+import { IconExternal } from "./icons";
 import { ItemForm, UnitForm } from "./forms";
 import { ActionButton, ConfirmButton } from "./ui";
 
@@ -46,52 +47,48 @@ export function ItemRow({
 
   if (editing && edit) {
     return (
-      <li className="py-2">
+      <li className="px-4 py-3">
         <ItemForm action={edit.update} initial={item} submitLabel="Save item" onDone={() => setEditing(false)} onCancel={() => setEditing(false)} />
       </li>
     );
   }
 
+  const toggleDone = () => {
+    const next = !optimisticDone;
+    setError(undefined);
+    start(async () => {
+      setOptimisticDone(next);
+      const res = await toggle(next);
+      if (res?.error) setError(res.error);
+    });
+  };
+
   return (
-    <li className="flex gap-3 py-2.5">
-      <input
-        type="checkbox"
-        className="mt-1 size-4 shrink-0 cursor-pointer"
-        style={{ accentColor: color }}
-        checked={optimisticDone}
-        aria-label={`Mark "${item.title}" ${optimisticDone ? "not done" : "done"}`}
-        onChange={(e) => {
-          const next = e.target.checked;
-          setError(undefined);
-          start(async () => {
-            setOptimisticDone(next);
-            const res = await toggle(next);
-            if (res?.error) setError(res.error);
-          });
-        }}
-      />
+    <li className={`flex items-start gap-3 px-4 py-3 ${optimisticDone ? "bg-surface-2/50" : ""}`}>
+      <span className="mt-0.5">
+        <KindBadge kind={item.kind} />
+      </span>
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <KindBadge kind={item.kind} />
-          {isSafeUrl(item.url) ? (
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`font-medium underline decoration-line underline-offset-4 hover:decoration-accent ${optimisticDone ? "text-muted line-through" : ""}`}
-            >
-              {item.title}
-              <span aria-hidden className="ml-1 text-xs text-muted">↗</span>
-            </a>
-          ) : (
-            <span className={`font-medium ${optimisticDone ? "text-muted line-through" : ""}`}>{item.title}</span>
-          )}
-        </div>
+        {isSafeUrl(item.url) ? (
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`inline-flex items-start gap-1 leading-snug font-semibold hover:underline ${optimisticDone ? "text-muted" : "text-accent"}`}
+          >
+            {item.title}
+            <IconExternal className="mt-0.5 size-3.5 opacity-70" />
+            <span className="sr-only">(opens in a new tab)</span>
+          </a>
+        ) : (
+          <span className={`leading-snug font-semibold ${optimisticDone ? "text-muted" : ""}`}>{item.title}</span>
+        )}
         <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-muted">
+          <span>{kindLabel(item.kind)}</span>
           <DueLabel due={due} done={optimisticDone} today={today} />
-          {item.est_minutes != null && <span>~{formatMinutes(item.est_minutes)}</span>}
+          {item.est_minutes != null && <span>{formatMinutes(item.est_minutes)}</span>}
         </div>
-        {item.notes && <p className="mt-1 text-sm whitespace-pre-wrap text-muted">{item.notes}</p>}
+        {item.notes && <p className="mt-1 max-w-prose text-sm whitespace-pre-wrap text-muted">{item.notes}</p>}
         {error && <p className="mt-1 text-xs text-danger">{error}</p>}
         {edit && (
           <div className="mt-2 flex flex-wrap gap-1">
@@ -102,6 +99,22 @@ export function ItemRow({
           </div>
         )}
       </div>
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={optimisticDone}
+        aria-label={`Mark "${item.title}" as ${optimisticDone ? "not done" : "done"}`}
+        onClick={toggleDone}
+        className={`grid size-8 shrink-0 place-items-center rounded-full border-2 transition-colors ${
+          optimisticDone ? "border-transparent text-white" : "border-line text-transparent hover:border-ok hover:text-ok/50"
+        }`}
+        style={optimisticDone ? { background: color } : undefined}
+        title={optimisticDone ? "Done. Click to undo" : "Mark as done"}
+      >
+        <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M5 12.5l4.5 4.5L19 7.5" />
+        </svg>
+      </button>
     </li>
   );
 }
@@ -121,16 +134,16 @@ export function UnitEditor({
   if (editing) {
     return (
       <div className="mt-3">
-        <UnitForm action={edit.update} initial={unit} submitLabel="Save unit" onDone={() => setEditing(false)} onCancel={() => setEditing(false)} />
+        <UnitForm action={edit.update} initial={unit} submitLabel="Save module" onDone={() => setEditing(false)} onCancel={() => setEditing(false)} />
       </div>
     );
   }
   return (
     <div className="mt-3 flex flex-wrap gap-1">
-      <ActionButton label="Move unit up" action={() => edit.move(-1)} className={`btn btn-sm ${isFirst ? "invisible" : ""}`}>↑</ActionButton>
-      <ActionButton label="Move unit down" action={() => edit.move(1)} className={`btn btn-sm ${isLast ? "invisible" : ""}`}>↓</ActionButton>
-      <button type="button" className="btn btn-sm" onClick={() => setEditing(true)}>Edit unit</button>
-      <ConfirmButton action={edit.remove} label="Delete unit" confirmLabel="Delete unit and its items?" />
+      <ActionButton label="Move module up" action={() => edit.move(-1)} className={`btn btn-sm ${isFirst ? "invisible" : ""}`}>↑</ActionButton>
+      <ActionButton label="Move module down" action={() => edit.move(1)} className={`btn btn-sm ${isLast ? "invisible" : ""}`}>↓</ActionButton>
+      <button type="button" className="btn btn-sm" onClick={() => setEditing(true)}>Edit module</button>
+      <ConfirmButton action={edit.remove} label="Delete module" confirmLabel="Delete module and its items?" />
     </div>
   );
 }
@@ -140,7 +153,7 @@ export function AddItem({ action }: { action: FormAction }) {
   if (!open)
     return (
       <button type="button" className="btn btn-sm mt-2 border-dashed" onClick={() => setOpen(true)}>
-        + Add resource / task
+        + Add item
       </button>
     );
   return (
@@ -155,13 +168,13 @@ export function AddUnit({ action }: { action: FormAction }) {
   if (!open)
     return (
       <button type="button" className="btn w-full border-dashed py-3" onClick={() => setOpen(true)}>
-        + Add unit
+        + Add module
       </button>
     );
   return (
     <div className="card p-4">
-      <h3 className="mb-3 font-serif text-lg font-semibold">New unit</h3>
-      <UnitForm action={action} submitLabel="Add unit" onDone={() => setOpen(false)} onCancel={() => setOpen(false)} />
+      <h3 className="mb-3 font-serif text-lg font-semibold">New module</h3>
+      <UnitForm action={action} submitLabel="Add module" onDone={() => setOpen(false)} onCancel={() => setOpen(false)} />
     </div>
   );
 }

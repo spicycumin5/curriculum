@@ -33,7 +33,7 @@ export default async function WeekPage({ searchParams }: { searchParams: Promise
           <p className="text-sm text-muted">
             {classCount} class{classCount === 1 ? "" : "es"} this week
           </p>
-          <h1 className="font-serif text-3xl font-semibold tracking-tight">
+          <h1 className="font-serif text-3xl font-bold tracking-tight sm:text-4xl">
             Week of {format(monday, "MMMM d")}
           </h1>
         </div>
@@ -46,8 +46,8 @@ export default async function WeekPage({ searchParams }: { searchParams: Promise
 
       {noSchedule && (
         <p className="card p-4 text-sm text-muted">
-          None of your courses have class days yet. Open a course → <span className="text-ink">Settings &amp; sharing</span> →{" "}
-          <span className="text-ink">Class schedule</span> to add them.
+          None of your courses have class days yet. Open a course, go to <span className="text-ink">People &amp; settings</span>, and add them under{" "}
+          <span className="text-ink">Class schedule</span>.
         </p>
       )}
 
@@ -60,12 +60,14 @@ export default async function WeekPage({ searchParams }: { searchParams: Promise
           return (
             <li
               key={iso}
-              className={`card flex flex-col gap-2 p-3 lg:min-h-64 ${isToday ? "ring-2 ring-accent" : ""} ${empty ? "opacity-70" : ""}`}
+              className={`card flex flex-col gap-2 p-3 lg:min-h-64 ${isToday ? "border-ink/60 border-t-4 border-t-highlight" : ""} ${empty ? "bg-surface-2/60" : ""}`}
               aria-current={isToday ? "date" : undefined}
             >
               <div className="flex items-baseline justify-between lg:block">
-                <p className="text-xs font-medium tracking-wider text-muted uppercase">{format(parseISO(iso), "EEE")}</p>
-                <p className={`font-serif text-lg font-semibold ${isToday ? "text-accent" : ""}`}>{format(parseISO(iso), "MMM d")}</p>
+                <p className="text-sm font-semibold text-muted">{format(parseISO(iso), "EEEE")}</p>
+                <p className="font-serif text-lg font-semibold">
+                  {isToday ? <span className="today-mark">{format(parseISO(iso), "MMM d")}</span> : format(parseISO(iso), "MMM d")}
+                </p>
               </div>
 
               {daySessions.map((s) => (

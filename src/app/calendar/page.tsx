@@ -48,7 +48,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   return (
     <div className="grid gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="font-serif text-3xl font-semibold tracking-tight">{format(monthStart, "MMMM yyyy")}</h1>
+        <h1 className="font-serif text-3xl font-bold tracking-tight sm:text-4xl">{format(monthStart, "MMMM yyyy")}</h1>
         <div className="flex gap-1">
           <Link className="btn" href={href(format(addMonths(monthStart, -1), "yyyy-MM"))} aria-label="Previous month">←</Link>
           <Link className="btn" href={href(today.slice(0, 7))}>Today</Link>
@@ -69,12 +69,12 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
       )}
 
       <div className="card overflow-hidden">
-        <div className="grid grid-cols-7 border-b border-line bg-surface-2 text-center text-xs font-medium text-muted">
+        <div className="grid grid-cols-[repeat(7,minmax(0,1fr))] border-b border-line bg-surface-2 text-center text-xs font-semibold text-muted">
           {WEEKDAYS.map((d) => (
             <div key={d} className="py-2">{d}</div>
           ))}
         </div>
-        <div className="grid grid-cols-7">
+        <div className="grid grid-cols-[repeat(7,minmax(0,1fr))]">
           {days.map((day) => {
             const iso = format(day, "yyyy-MM-dd");
             const entries = byDay.get(iso) ?? [];
@@ -88,7 +88,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
               >
                 <div
                   className={`mb-1 inline-flex size-6 items-center justify-center rounded-full text-xs ${
-                    isToday ? "bg-accent font-semibold text-accent-ink" : outside ? "text-muted/60" : "text-muted"
+                    isToday ? "bg-highlight font-bold text-highlight-ink" : outside ? "text-muted/60" : "text-muted"
                   }`}
                 >
                   {format(day, "d")}
@@ -103,7 +103,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                   ))}
                 </div>
                 {classes.length > 0 && (
-                  <ul className="mb-0.5 hidden gap-0.5 sm:grid">
+                  <ul className="mb-0.5 hidden grid-cols-[minmax(0,1fr)] gap-0.5 sm:grid">
                     {classes.map((s) => (
                       <li key={s.meetingId} className="truncate text-[11px] leading-tight text-muted" title={`Class: ${s.courseTitle}`}>
                         <span className="mr-1 inline-block size-1.5 rounded-full border align-middle" style={{ borderColor: s.color }} aria-hidden />
@@ -113,7 +113,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                     ))}
                   </ul>
                 )}
-                <ul className="hidden gap-0.5 sm:grid">
+                <ul className="hidden grid-cols-[minmax(0,1fr)] gap-0.5 sm:grid">
                   {entries.slice(0, MAX_PER_CELL).map((e) => (
                     <li key={`${e.kind}-${e.id}`}>
                       <Link
@@ -139,11 +139,11 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
       <p className="-mt-3 flex flex-wrap gap-4 text-xs text-muted">
         <span><span className="mr-1 inline-block size-2 rounded-full border border-muted align-middle" aria-hidden />Class day</span>
         <span><span className="mr-1 inline-block h-2 w-3 border-l-[3px] border-muted bg-surface-2 align-middle" aria-hidden />Deadline</span>
-        <Link href="/week" className="text-accent hover:underline">Week view →</Link>
+        <Link href="/week" className="link">Open week view</Link>
       </p>
 
       <section className="card p-5">
-        <h2 className="mb-4 font-serif text-lg font-semibold">Agenda · {format(monthStart, "MMMM")}</h2>
+        <h2 className="mb-4 font-serif text-lg font-semibold">Everything due in {format(monthStart, "MMMM")}</h2>
         <DeadlineList deadlines={inMonth} today={today} empty="No deadlines this month." />
       </section>
     </div>

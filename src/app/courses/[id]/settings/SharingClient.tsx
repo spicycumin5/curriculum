@@ -24,7 +24,7 @@ export function MemberRoleSelect({ courseId, userId, role }: { courseId: string;
           });
         }}
       >
-        <option value="viewer">Viewer</option>
+        <option value="viewer">Student</option>
         <option value="editor">Editor</option>
       </select>
       {error && <span className="text-xs text-danger">{error}</span>}
@@ -60,7 +60,7 @@ export function InviteManager({
         <label className="text-xs text-muted">
           Role
           <select name="role" className="input mt-1 w-auto" defaultValue="viewer">
-            <option value="viewer">Viewer</option>
+            <option value="viewer">Student</option>
             <option value="editor">Editor</option>
           </select>
         </label>
@@ -78,7 +78,7 @@ export function InviteManager({
             return (
               <li key={inv.code} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
                 <div className="min-w-0">
-                  <span className="capitalize">{inv.role}</span> link ·{" "}
+                  <span>{inv.role === "viewer" ? "Student" : "Editor"} link</span>{" "}
                   <span className={expired ? "text-danger" : "text-muted"}>
                     {expired ? "expired" : `expires ${formatDate(inv.expires_at.slice(0, 10), "MMM d")}`}
                   </span>

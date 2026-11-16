@@ -23,7 +23,7 @@ export function CourseForm({
     <form {...formProps} className="grid gap-4">
       <div>
         <label className="label" htmlFor="c-title">Title</label>
-        <input id="c-title" name="title" required maxLength={200} className="input" defaultValue={initial?.title} placeholder="e.g. Intro to Linear Algebra" />
+        <input id="c-title" name="title" required maxLength={200} className="input" defaultValue={initial?.title} placeholder="e.g. Intro to Linear Algebra…" />
       </div>
       <div>
         <label className="label" htmlFor="c-desc">Description</label>
@@ -78,8 +78,8 @@ export function UnitForm({
   const { state, pending, formProps } = useForm(action, { reset: !initial, onDone });
   return (
     <form {...formProps} className="grid gap-3">
-      <input name="title" required maxLength={200} className="input" defaultValue={initial?.title} placeholder="Unit title, e.g. Vectors & spans" aria-label="Unit title" />
-      <textarea name="description" rows={2} maxLength={5000} className="input" defaultValue={initial?.description ?? ""} placeholder="Goals for this unit (optional)" aria-label="Unit description" />
+      <input name="title" required maxLength={200} className="input" defaultValue={initial?.title} placeholder="Module title, e.g. Vectors and spans…" aria-label="Module title" />
+      <textarea name="description" rows={2} maxLength={5000} className="input" defaultValue={initial?.description ?? ""} placeholder="Goals for this module (optional)…" aria-label="Module description" />
       <div className="grid grid-cols-2 gap-3">
         <label className="text-xs text-muted">
           Starts
@@ -120,7 +120,7 @@ export function ItemForm({
   return (
     <form {...formProps} className="grid gap-3 rounded-lg border border-dashed border-line p-3">
       <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
-        <input name="title" required maxLength={300} className="input" defaultValue={initial?.title} placeholder="Resource or task, e.g. Read chapter 2" aria-label="Item title" />
+        <input name="title" required maxLength={300} className="input" defaultValue={initial?.title} placeholder="e.g. Read chapter 2…" aria-label="Item title" />
         <select name="kind" className="input" defaultValue={initial?.kind ?? "read"} aria-label="Kind">
           {ITEM_KINDS.map((k) => (
             <option key={k} value={k}>
@@ -132,7 +132,7 @@ export function ItemForm({
       <input name="url" type="url" className="input" defaultValue={initial?.url ?? ""} placeholder="https://… (optional)" aria-label="Link" />
       <div className="grid grid-cols-2 gap-3">
         <label className="text-xs text-muted">
-          Due (blank = unit&apos;s due date)
+          Due (blank = module&apos;s due date)
           <input type="date" name="due_date" className="input mt-1" defaultValue={initial?.due_date ?? ""} />
         </label>
         <label className="text-xs text-muted">

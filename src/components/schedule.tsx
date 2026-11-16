@@ -69,8 +69,7 @@ export function ScheduleEditor({ courseId, meetings, canEdit }: { courseId: stri
                   <span className="inline-block w-24 font-medium">{WEEKDAYS[m.weekday - 1].long}</span>
                   <span className="text-muted">{formatTimeRange(m.start_time, m.end_time) ?? "Any time"}</span>
                   {m.location && (
-                    <span className="text-muted">
-                      {" · "}
+                    <span className="ml-3 text-muted">
                       <LocationText location={m.location} />
                     </span>
                   )}

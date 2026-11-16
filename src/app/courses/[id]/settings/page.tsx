@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { deleteCourse, removeMember, updateCourse } from "@/app/actions/courses";
 import { RoleBadge } from "@/components/badges";
@@ -8,6 +7,7 @@ import { formatDate } from "@/lib/dates";
 import { getCourses } from "@/lib/queries";
 import { requireUser } from "@/lib/supabase/server";
 import type { Role } from "@/lib/types";
+import { CourseHeader } from "@/components/CourseHeader";
 import { ScheduleEditor } from "@/components/schedule";
 import { InviteManager, MemberRoleSelect } from "./SharingClient";
 
@@ -31,11 +31,9 @@ export default async function CourseSettingsPage({ params }: { params: Promise<{
   const canEdit = course.role !== "viewer";
 
   return (
-    <div className="mx-auto grid max-w-3xl gap-6">
-      <div>
-        <Link href={`/courses/${id}`} className="text-sm text-muted hover:underline">← {course.title}</Link>
-        <h1 className="mt-1 font-serif text-3xl font-semibold tracking-tight">{isOwner ? "Settings & sharing" : "Course info"}</h1>
-      </div>
+    <div className="grid gap-6">
+      <CourseHeader course={course} tab="settings" />
+      <div className="grid max-w-3xl gap-6">
 
       {canEdit && (
         <section className="card p-5">
@@ -54,7 +52,7 @@ export default async function CourseSettingsPage({ params }: { params: Promise<{
 
       <section className="card p-5">
         <h2 className="mb-1 font-serif text-lg font-semibold">Members</h2>
-        <p className="mb-4 text-sm text-muted">Everyone sees the same units and resources; progress is tracked per person.</p>
+        <p className="mb-4 text-sm text-muted">Everyone sees the same modules. Each person tracks their own progress.</p>
         <ul className="divide-y divide-line">
           {members.map((m) => (
             <li key={m.user_id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
@@ -82,7 +80,7 @@ export default async function CourseSettingsPage({ params }: { params: Promise<{
         <section className="card p-5">
           <h2 className="mb-1 font-serif text-lg font-semibold">Invite links</h2>
           <p className="mb-4 text-sm text-muted">
-            Anyone signed in with the link can join. Editors can change units and resources; viewers can only track their own progress.
+            Anyone signed in with the link can join. Editors can change the modules. Students follow along and track their own progress.
           </p>
           <InviteManager courseId={id} invites={(invitesRes.data ?? []) as { code: string; role: Role; expires_at: string }[]} />
         </section>
@@ -106,6 +104,7 @@ export default async function CourseSettingsPage({ params }: { params: Promise<{
           <ConfirmButton action={removeMember.bind(null, id, user.id)} label="Leave this course" confirmLabel="Really leave?" />
         )}
       </section>
+      </div>
     </div>
   );
 }

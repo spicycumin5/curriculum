@@ -10,7 +10,7 @@ type Mode = "signin" | "signup" | "reset";
 export function LoginForm({ next }: { next: string }) {
   const [mode, setMode] = useState<Mode>("signin");
   return (
-    <div className="card p-6">
+    <div>
       {mode !== "reset" && (
         <div className="mb-5 grid grid-cols-2 rounded-lg bg-surface-2 p-1 text-sm" role="tablist">
           {(["signin", "signup"] as const).map((m) => (

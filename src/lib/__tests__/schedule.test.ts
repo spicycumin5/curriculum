@@ -41,11 +41,11 @@ describe("time formatting", () => {
 describe("summarizeSchedule", () => {
   it("groups days with the same time", () => {
     expect(summarizeSchedule([meeting(5, "09:00", "10:00"), meeting(1, "09:00", "10:00"), meeting(3, "09:00", "10:00")])).toBe(
-      "Mon, Wed, Fri · 9:00 AM – 10:00 AM",
+      "Mon, Wed, Fri at 9:00 AM – 10:00 AM",
     );
   });
   it("lists different times separately", () => {
-    expect(summarizeSchedule([meeting(1, "09:00"), meeting(4, "14:00", "15:30")])).toBe("Mon · 9:00 AM; Thu · 2:00 PM – 3:30 PM");
+    expect(summarizeSchedule([meeting(1, "09:00"), meeting(4, "14:00", "15:30")])).toBe("Mon at 9:00 AM; Thu at 2:00 PM – 3:30 PM");
   });
   it("handles untimed days and empty schedules", () => {
     expect(summarizeSchedule([meeting(2), meeting(4)])).toBe("Tue, Thu");

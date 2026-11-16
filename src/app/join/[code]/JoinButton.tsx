@@ -19,7 +19,7 @@ export function JoinButton({ code }: { code: string }) {
           })
         }
       >
-        {pending ? "Joining…" : "Join course"}
+        {pending ? "Enrolling…" : "Enroll"}
       </button>
       {error && <p className="text-sm text-danger">{error}</p>}
     </div>

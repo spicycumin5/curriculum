@@ -19,11 +19,12 @@ export default async function JoinPage({ params }: { params: Promise<{ code: str
           </>
         ) : (
           <>
-            <p className="text-sm text-muted">You&apos;ve been invited to join</p>
+            <p className="text-sm text-muted">You&apos;re invited to enroll in</p>
             <h1 className="font-serif text-2xl font-semibold break-words">{invite.course_title}</h1>
             <p className="text-sm text-muted">
-              as <span className="font-medium text-ink">{invite.role}</span>
-              {invite.role === "editor" ? " (can edit units and resources)" : " (can follow along and track progress)"}.
+              as {invite.role === "editor" ? "an " : "a "}
+              <span className="font-semibold text-ink">{invite.role === "editor" ? "editor" : "student"}</span>
+              {invite.role === "editor" ? ", who can change the modules." : ", who follows along and tracks their own progress."}
             </p>
             <JoinButton code={code} />
           </>
