@@ -20,6 +20,7 @@ import { getCourses } from "@/lib/queries";
 import { requireUser } from "@/lib/supabase/server";
 import { getToday } from "@/lib/today";
 import { ROLE_RANK } from "@/lib/types";
+import { formatTimeRange, nextSession, sessionsOn, summarizeSchedule } from "@/lib/schedule";
 
 export default async function CoursePage({
   params,
@@ -42,6 +43,9 @@ export default async function CoursePage({
   const overall = courseProgress(course, done);
   const totalMinutes = course.units.flatMap((u) => u.items).reduce((s, i) => s + (i.est_minutes ?? 0), 0);
   const range = formatRange(course.start_date, course.end_date);
+  const schedule = summarizeSchedule(course.meetings);
+  const todaysClass = sessionsOn([course], today)[0];
+  const upcomingClass = todaysClass ?? nextSession(course, today);
 
   return (
     <div className="grid gap-6">
@@ -69,6 +73,27 @@ export default async function CoursePage({
             </div>
           </div>
           {course.description && <p className="max-w-prose whitespace-pre-wrap text-muted">{course.description}</p>}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg bg-surface-2 px-3 py-2 text-sm">
+            <span aria-hidden>🗓</span>
+            {schedule ? (
+              <>
+                <span className="font-medium">{schedule}</span>
+                {upcomingClass && (
+                  <span className={todaysClass ? "font-medium text-accent" : "text-muted"}>
+                    {todaysClass ? "Class today" : `Next class ${formatDate(upcomingClass.date)}`}
+                    {upcomingClass.start && ` · ${formatTimeRange(upcomingClass.start, upcomingClass.end)}`}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="text-muted">No weekly class days set.</span>
+            )}
+            {canEdit && (
+              <Link href={`/courses/${id}/settings#schedule`} className="text-accent hover:underline">
+                {schedule ? "Edit schedule" : "Set class days"}
+              </Link>
+            )}
+          </div>
           <div className="grid gap-1.5">
             <div className="flex justify-between text-sm">
               <span className="text-muted">Your progress</span>

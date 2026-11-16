@@ -18,6 +18,7 @@ export async function Nav() {
           <>
             <nav className="flex flex-1 flex-wrap items-center gap-1 text-sm">
               <NavLink href="/dashboard">Dashboard</NavLink>
+              <NavLink href="/week">Week</NavLink>
               <NavLink href="/calendar">Calendar</NavLink>
               <NavLink href="/courses/new">New course</NavLink>
               <NavLink href="/courses/import">Import</NavLink>

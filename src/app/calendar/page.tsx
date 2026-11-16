@@ -12,6 +12,7 @@ import Link from "next/link";
 import { DeadlineList } from "@/components/DeadlineList";
 import { dueStatus } from "@/lib/dates";
 import { collectDeadlines, type Deadline } from "@/lib/progress";
+import { formatTime, sessionsBetween } from "@/lib/schedule";
 import { getCourses } from "@/lib/queries";
 import { requireUser } from "@/lib/supabase/server";
 import { getToday } from "@/lib/today";
@@ -35,6 +36,8 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   const byDay = new Map<string, Deadline[]>();
   for (const d of all) byDay.set(d.due, [...(byDay.get(d.due) ?? []), d]);
   const inMonth = all.filter((d) => d.due.startsWith(monthKey));
+  const visibleCourses = courseFilter ? courses.filter((c) => c.id === courseFilter) : courses;
+  const sessions = sessionsBetween(visibleCourses, format(days[0], "yyyy-MM-dd"), format(days[days.length - 1], "yyyy-MM-dd"));
 
   const href = (month: string, course = courseFilter) => {
     const q = new URLSearchParams({ m: month });
@@ -75,6 +78,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
           {days.map((day) => {
             const iso = format(day, "yyyy-MM-dd");
             const entries = byDay.get(iso) ?? [];
+            const classes = sessions.get(iso) ?? [];
             const outside = !iso.startsWith(monthKey);
             const isToday = iso === today;
             return (
@@ -91,10 +95,24 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                 </div>
                 {/* Dots on phones, titles on larger screens */}
                 <div className="flex flex-wrap gap-0.5 sm:hidden">
+                  {classes.map((s) => (
+                    <span key={s.meetingId} className="size-1.5 rounded-full border" style={{ borderColor: s.color }} />
+                  ))}
                   {entries.map((e) => (
                     <span key={`${e.kind}-${e.id}`} className={`size-1.5 rounded-full ${e.done ? "opacity-30" : ""}`} style={{ background: e.color }} />
                   ))}
                 </div>
+                {classes.length > 0 && (
+                  <ul className="mb-0.5 hidden gap-0.5 sm:grid">
+                    {classes.map((s) => (
+                      <li key={s.meetingId} className="truncate text-[11px] leading-tight text-muted" title={`Class: ${s.courseTitle}`}>
+                        <span className="mr-1 inline-block size-1.5 rounded-full border align-middle" style={{ borderColor: s.color }} aria-hidden />
+                        {s.start ? `${formatTime(s.start)} ` : ""}
+                        {s.courseTitle}
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 <ul className="hidden gap-0.5 sm:grid">
                   {entries.slice(0, MAX_PER_CELL).map((e) => (
                     <li key={`${e.kind}-${e.id}`}>
@@ -117,6 +135,12 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
           })}
         </div>
       </div>
+
+      <p className="-mt-3 flex flex-wrap gap-4 text-xs text-muted">
+        <span><span className="mr-1 inline-block size-2 rounded-full border border-muted align-middle" aria-hidden />Class day</span>
+        <span><span className="mr-1 inline-block h-2 w-3 border-l-[3px] border-muted bg-surface-2 align-middle" aria-hidden />Deadline</span>
+        <Link href="/week" className="text-accent hover:underline">Week view →</Link>
+      </p>
 
       <section className="card p-5">
         <h2 className="mb-4 font-serif text-lg font-semibold">Agenda · {format(monthStart, "MMMM")}</h2>

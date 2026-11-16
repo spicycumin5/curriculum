@@ -16,7 +16,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!course) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const slug = course.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "course";
-  return new NextResponse(JSON.stringify(toCourseJson(course, course.units), null, 2) + "\n", {
+  return new NextResponse(JSON.stringify(toCourseJson(course, course.units, course.meetings), null, 2) + "\n", {
     headers: {
       "Content-Type": "application/json; charset=utf-8",
       "Content-Disposition": `attachment; filename="${slug}.json"`,

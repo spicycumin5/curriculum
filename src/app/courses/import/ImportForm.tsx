@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { importCourse } from "@/app/actions/courses";
 import { formatMinutes } from "@/components/badges";
 import { parseCourseJson } from "@/lib/schema/course-json";
+import { dayKeyToNumber, summarizeSchedule } from "@/lib/schedule";
 
 export function ImportForm() {
   const [text, setText] = useState("");
@@ -68,6 +69,14 @@ export function ImportForm() {
                 {minutes > 0 && <> · ~{formatMinutes(minutes)}</>}
                 {course.start_date && <> · {course.start_date} → {course.end_date ?? "…"}</>}
               </p>
+              {course.schedule.length > 0 && (
+                <p className="text-sm text-muted">
+                  🗓{" "}
+                  {summarizeSchedule(
+                    course.schedule.map((m) => ({ weekday: dayKeyToNumber(m.day), start_time: m.start ?? null, end_time: m.end ?? null })),
+                  )}
+                </p>
+              )}
             </div>
             <ol className="grid gap-1 text-sm">
               {course.units.map((u, i) => (

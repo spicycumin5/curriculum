@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { RoleBadge } from "@/components/badges";
+import { DueLabel, KindBadge, RoleBadge } from "@/components/badges";
 import { DeadlineList } from "@/components/DeadlineList";
 import { ProgressBar } from "@/components/ui";
 import { daysUntil, formatDate, relativeDue } from "@/lib/dates";
-import { collectDeadlines, courseProgress } from "@/lib/progress";
+import { collectDeadlines, courseProgress, nextItems } from "@/lib/progress";
+import { formatTimeRange, nextSession, sessionsOn, summarizeSchedule } from "@/lib/schedule";
+import { LocationText } from "@/components/schedule";
 import { getCourses } from "@/lib/queries";
 import { requireUser } from "@/lib/supabase/server";
 import { getToday } from "@/lib/today";
@@ -14,6 +16,12 @@ export default async function DashboardPage() {
 
   const open = collectDeadlines(courses, done).filter((d) => !d.done && d.kind === "item");
   const overdue = open.filter((d) => daysUntil(d.due, today) < 0);
+  const todaysClasses = sessionsOn(courses, today);
+  const nextClass = courses
+    .map((c) => nextSession(c, today))
+    .filter((s): s is NonNullable<typeof s> => !!s)
+    .sort((a, b) => a.date.localeCompare(b.date) || (a.start ?? "").localeCompare(b.start ?? ""))[0];
+  const courseById = new Map(courses.map((c) => [c.id, c]));
   const upcoming = open.filter((d) => {
     const n = daysUntil(d.due, today);
     return n >= 0 && n <= 7;
@@ -25,6 +33,74 @@ export default async function DashboardPage() {
         <p className="text-sm text-muted">{formatDate(today, "EEEE, MMMM d")}</p>
         <h1 className="font-serif text-3xl font-semibold tracking-tight">Your courses</h1>
       </div>
+
+      {courses.length > 0 && (
+        <section aria-labelledby="today-h" className="card p-5">
+          <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="today-h" className="font-serif text-xl font-semibold">Today&apos;s classes</h2>
+            <Link href="/week" className="text-sm text-accent hover:underline">Week view →</Link>
+          </div>
+          {todaysClasses.length === 0 ? (
+            <p className="text-sm text-muted">
+              No classes scheduled today.
+              {nextClass && (
+                <>
+                  {" "}Next up: <span className="text-ink">{nextClass.courseTitle}</span> on {formatDate(nextClass.date, "EEEE, MMM d")}
+                  {nextClass.start && <> at {formatTimeRange(nextClass.start, null)}</>}.
+                </>
+              )}
+              {!nextClass && courses.every((c) => c.meetings.length === 0) && (
+                <> Set class days on a course (Settings → Class schedule) to build your weekly timetable.</>
+              )}
+            </p>
+          ) : (
+            <ol className="grid gap-3 md:grid-cols-2">
+              {todaysClasses.map((s) => {
+                const course = courseById.get(s.courseId)!;
+                const todo = nextItems(course, done, 3);
+                return (
+                  <li key={s.meetingId} className="rounded-lg border border-line p-4" style={{ borderLeft: `4px solid ${s.color}` }}>
+                    <p className="text-xs font-medium tracking-wide text-muted uppercase">
+                      {formatTimeRange(s.start, s.end) ?? "Any time today"}
+                    </p>
+                    <Link href={`/courses/${s.courseId}`} className="font-serif text-lg font-semibold hover:underline">
+                      {s.courseTitle}
+                    </Link>
+                    {s.location && (
+                      <p className="text-sm text-muted">
+                        <LocationText location={s.location} />
+                      </p>
+                    )}
+                    {todo.length > 0 ? (
+                      <ul className="mt-3 grid gap-1.5 text-sm">
+                        <li className="text-xs text-muted">Up next</li>
+                        {todo.map((t) => (
+                          <li key={t.id} className="flex flex-wrap items-center gap-1.5">
+                            <KindBadge kind={t.kind} />
+                            <span className="min-w-0 truncate">{t.title}</span>
+                            {t.due && (
+                              <span className="text-xs">
+                                <DueLabel due={t.due} done={false} today={today} />
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : course.units.some((u) => u.items.length > 0) ? (
+                      <p className="mt-3 text-sm text-ok">Everything in this course is done 🎉</p>
+                    ) : (
+                      <p className="mt-3 text-sm text-muted">
+                        No resources yet.{" "}
+                        <Link href={`/courses/${s.courseId}?edit=1`} className="text-accent hover:underline">Add some</Link>
+                      </p>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </section>
+      )}
 
       {courses.length === 0 ? (
         <div className="card grid justify-items-center gap-3 p-10 text-center">
@@ -58,6 +134,7 @@ export default async function DashboardPage() {
                         {p.completed}/{p.total} done · {c.units.length} unit{c.units.length === 1 ? "" : "s"}
                       </p>
                     </div>
+                    {c.meetings.length > 0 && <p className="truncate text-xs text-muted">🗓 {summarizeSchedule(c.meetings)}</p>}
                     <p className="truncate text-xs text-muted">
                       {next ? (
                         <>

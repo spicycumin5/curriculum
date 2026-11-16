@@ -13,7 +13,7 @@ export default function NewCoursePage() {
         </p>
       </div>
       <div className="card p-5">
-        <CourseForm action={createCourse} submitLabel="Create course" />
+        <CourseForm action={createCourse} submitLabel="Create course" withSchedule />
       </div>
     </div>
   );

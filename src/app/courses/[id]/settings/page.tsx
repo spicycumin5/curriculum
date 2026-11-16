@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/dates";
 import { getCourses } from "@/lib/queries";
 import { requireUser } from "@/lib/supabase/server";
 import type { Role } from "@/lib/types";
+import { ScheduleEditor } from "@/components/schedule";
 import { InviteManager, MemberRoleSelect } from "./SharingClient";
 
 export default async function CourseSettingsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -42,6 +43,14 @@ export default async function CourseSettingsPage({ params }: { params: Promise<{
           <CourseForm action={updateCourse.bind(null, id)} initial={course} submitLabel="Save details" />
         </section>
       )}
+
+      <section id="schedule" className="card p-5">
+        <h2 className="mb-1 font-serif text-lg font-semibold">Class schedule</h2>
+        <p className="mb-4 text-sm text-muted">
+          The days this course meets each week, between its start and end dates. Shared with everyone in the course.
+        </p>
+        <ScheduleEditor courseId={id} meetings={course.meetings} canEdit={canEdit} />
+      </section>
 
       <section className="card p-5">
         <h2 className="mb-1 font-serif text-lg font-semibold">Members</h2>

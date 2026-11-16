@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireUser } from "@/lib/supabase/server";
-import { courseJson, formatIssues, itemJson, parseCourseJson, unitJson } from "@/lib/schema/course-json";
+import { clockTime, courseJson, formatIssues, itemJson, parseCourseJson, unitJson } from "@/lib/schema/course-json";
 import type { ActionResult, Role } from "@/lib/types";
 
 // ------------------------------------------------------------------ helpers
@@ -63,6 +63,21 @@ function itemFields(fd: FormData) {
   });
 }
 
+/** Weekday checkboxes ("days") + optional start/end/location → meeting rows, or validation errors. */
+function meetingFields(fd: FormData): { ok: true; rows: { weekday: number; start_time: string | null; end_time: string | null; location: string | null }[] } | { ok: false; errors: string[] } {
+  const days = [...new Set(fd.getAll("days").map(Number))].filter((d) => Number.isInteger(d) && d >= 1 && d <= 7);
+  const start = field(fd, "start_time");
+  const end = field(fd, "end_time");
+  const location = field(fd, "location");
+  const errors: string[] = [];
+  if (start && !clockTime.safeParse(start).success) errors.push("Start time must be HH:MM");
+  if (end && !clockTime.safeParse(end).success) errors.push("End time must be HH:MM");
+  if (start && end && end <= start) errors.push("End time must be after start time");
+  if (location && location.length > 300) errors.push("Location is too long");
+  if (errors.length) return { ok: false, errors };
+  return { ok: true, rows: days.map((weekday) => ({ weekday, start_time: start, end_time: end, location })) };
+}
+
 /** Rewrite positions 0..n after moving one row up/down among its siblings. */
 async function reorder(
   supabase: SupabaseClient,
@@ -99,14 +114,20 @@ async function reorder(
 export async function createCourse(_prev: ActionResult, fd: FormData): Promise<ActionResult> {
   const parsed = courseFields(fd);
   if (!parsed.success) return fail(formatIssues(parsed.error));
+  const meetings = meetingFields(fd);
+  if (!meetings.ok) return fail(meetings.errors);
   const { supabase, user } = await requireUser();
-  const { units: _units, version: _v, ...values } = parsed.data;
+  const { units: _units, version: _v, schedule: _s, ...values } = parsed.data;
   const { data, error } = await supabase
     .from("courses")
     .insert({ ...values, color: values.color ?? undefined, owner_id: user.id })
     .select("id")
     .single();
   if (error) return { error: error.message };
+  if (meetings.rows.length) {
+    const { error: mErr } = await supabase.from("course_meetings").insert(meetings.rows.map((m) => ({ ...m, course_id: data.id })));
+    if (mErr) return { error: `Course created, but the schedule couldn't be saved: ${mErr.message}` };
+  }
   refresh();
   redirect(`/courses/${data.id}?edit=1`);
 }
@@ -115,7 +136,7 @@ export async function updateCourse(courseId: string, _prev: ActionResult, fd: Fo
   const parsed = courseFields(fd);
   if (!parsed.success) return fail(formatIssues(parsed.error));
   const { supabase } = await requireUser();
-  const { units: _units, version: _v, ...values } = parsed.data;
+  const { units: _units, version: _v, schedule: _s, ...values } = parsed.data;
   const { data, error } = await supabase
     .from("courses")
     .update({ ...values, color: values.color ?? "#4f46e5" })
@@ -144,6 +165,28 @@ export async function importCourse(text: string): Promise<ActionResult> {
   if (error) return { error: error.message };
   refresh();
   redirect(`/courses/${data}`);
+}
+
+// ------------------------------------------------------------------ class schedule
+
+export async function addMeetings(courseId: string, _prev: ActionResult, fd: FormData): Promise<ActionResult> {
+  const meetings = meetingFields(fd);
+  if (!meetings.ok) return fail(meetings.errors);
+  if (meetings.rows.length === 0) return { error: "Pick at least one day." };
+  const { supabase } = await requireUser();
+  const { error } = await supabase.from("course_meetings").insert(meetings.rows.map((m) => ({ ...m, course_id: courseId })));
+  if (error) return { error: error.message.includes("row-level security") ? NOT_ALLOWED : error.message };
+  refresh();
+  return { ok: true };
+}
+
+export async function deleteMeeting(meetingId: string): Promise<ActionResult> {
+  const { supabase } = await requireUser();
+  const { data, error } = await supabase.from("course_meetings").delete().eq("id", meetingId).select("id");
+  if (error) return { error: error.message };
+  if (!data?.length) return { error: NOT_ALLOWED };
+  refresh();
+  return { ok: true };
 }
 
 // ------------------------------------------------------------------ units

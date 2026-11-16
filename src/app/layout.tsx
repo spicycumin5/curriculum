@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${body.variable} ${display.variable} min-h-screen antialiased`}>
+      <body className={`${body.variable} ${display.variable} min-h-screen antialiased`} suppressHydrationWarning>
         <TimeZoneCookie />
         <Nav />
         <main className="mx-auto w-full max-w-5xl px-4 pt-6 pb-16 sm:px-6">{children}</main>
