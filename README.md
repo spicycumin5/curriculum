@@ -2,7 +2,9 @@
 
 A school-style planner for self-study. Make **courses** and split them into **units**. Fill each unit with things to **read / watch / do**, with **deadlines**. You can share a course with friends, and each person tracks their own progress.
 
-- **Dashboard:** your courses with progress bars, plus what's overdue and what's due in the next 7 days.
+- **Class schedule:** give each course weekly class days and times (e.g. Mon/Wed 6–7 PM). Take as many courses at once as you like.
+- **Dashboard:** today's classes, each with the next things to do for that course. Below that are your courses with progress bars, plus what's overdue and what's due in the next 7 days.
+- **Week:** a school-style weekly timetable of your classes and deadlines.
 - **Calendar:** a month view of every deadline, which you can filter by course. An agenda list sits below it.
 - **Course page:** a checklist of each unit's resources. **Edit** mode lets you add, edit, reorder and delete units and items.
 - **Sharing:** invite links that make someone a *viewer* (follows along) or an *editor* (can change the content).
@@ -16,7 +18,7 @@ Stack: Next.js 15 · Supabase (Postgres, Auth, Row-Level Security) · Tailwind C
 2. **Environment:** copy `.env.example` to `.env.local`. Fill in the project URL and publishable (anon) key from *Project Settings → API*. For the CLI import and RLS check, also add the service-role key.
 3. **Database:** apply the schema in one of two ways:
    - CLI: `npx supabase login`, then `npx supabase link --project-ref <ref>`, then `npm run db:push`
-   - or paste `supabase/migrations/20261115000000_init.sql` into the dashboard's SQL editor and run it.
+   - or paste each file in `supabase/migrations/` (in order) into the dashboard's SQL editor and run it.
 4. **Auth URLs:** in *Authentication → URL Configuration*, set Site URL to `http://localhost:3000`. Add `http://localhost:3000/**` (and later your Vercel URL + `/**`) to the Redirect URLs.
 5. Run `npm install`, then `npm run dev`, then open http://localhost:3000.
 

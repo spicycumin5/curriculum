@@ -7,15 +7,17 @@ A Next.js 15 (App Router) + Supabase app for planning self-study in a school for
 - `src/app/actions/`: server actions (all mutations).
 - `src/lib/queries.ts`: `getCourses()` loads courses + units + items + the current user's progress in one query.
 - `src/lib/schema/course-json.ts`: zod schema for the course JSON format and the form field rules.
-- `src/lib/dates.ts`, `src/lib/progress.ts`: pure logic, unit-tested in `src/lib/__tests__/`.
+- `src/lib/schedule.ts`: weekly class sessions (`course_meetings`, ISO weekday 1 = Mon).
+- `src/lib/dates.ts`, `src/lib/progress.ts`, `src/lib/schedule.ts`: pure logic, unit-tested in `src/lib/__tests__/`.
 
 ## Commands
 `npm run dev` · `npm test` · `npm run lint` · `npm run typecheck` · `npm run build` · `npm run rls-check` (needs a Supabase project) · `npm run db:push`
 
 ## Generating a curriculum when the user asks for one
-1. Ask for any missing basics: topic, current level, start date, weeks available, hours per week, preferred formats.
+1. Ask for any missing basics: topic, current level, start date, weeks available, hours per week, **which weekdays (and times) they want to study it**, and preferred formats.
 2. Write `curricula/<slug>.json` following `docs/course-format.md`. Use `curricula/example-linear-algebra.json` as a model.
    - Use 1 unit per week (or per milestone) with `start_date` and `due_date`. Space the dates evenly from the start date.
+   - Put the class days in `schedule`. Make each session long enough that the sessions together cover the weekly hours. Where possible, set unit due dates on a class day.
    - Make each unit a mix of kinds, with a realistic `est_minutes` for each item. Keep each week's total near the user's weekly hours.
    - Use only real, well-known resources with stable URLs, such as official docs, OCW/university courses, established YouTube channels and free books. Never invent URLs. If unsure about a URL, leave it out and name the resource in `title`/`notes`.
    - Include at least one "do" item per unit: exercises, a project step, or a self-explanation.

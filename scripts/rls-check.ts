@@ -64,6 +64,7 @@ async function run(a: { id: string; client: SupabaseClient }, b: { id: string; c
   const { data: courseId, error: impErr } = await a.client.rpc("import_course", {
     payload: {
       title: "RLS test",
+      schedule: [{ day: "mon", start: "09:00", end: "10:00" }, { day: "thu", location: "Library" }],
       units: [{ title: "U1", due_date: "2030-01-01", items: [{ title: "I1", kind: "read" }, { title: "I2", kind: "do" }] }],
     },
   });
@@ -71,6 +72,9 @@ async function run(a: { id: string; client: SupabaseClient }, b: { id: string; c
   const { data: items } = await a.client.from("items").select("id, unit_id").order("position");
   check("owner sees imported items", items?.length === 2, items);
   const [i1, i2] = items ?? [];
+
+  const { data: meetings } = await a.client.from("course_meetings").select("weekday, start_time").eq("course_id", courseId).order("weekday");
+  check("import creates the class schedule", meetings?.length === 2 && meetings[0].weekday === 1 && meetings[0].start_time === "09:00:00", meetings);
 
   // Anonymous + outsider
   const { data: anonCourses } = await anonClient.from("courses").select("id");
@@ -85,6 +89,10 @@ async function run(a: { id: string; client: SupabaseClient }, b: { id: string; c
   check("non-member cannot record progress", !!bProgErr);
   const { error: bMemberErr } = await b.client.from("course_members").insert({ course_id: courseId, user_id: b.id, role: "owner" });
   check("non-member cannot add themselves as member", !!bMemberErr);
+  const { data: bMeet } = await b.client.from("course_meetings").select("id").eq("course_id", courseId);
+  check("non-member cannot see class schedule", (bMeet ?? []).length === 0);
+  const { error: bMeetIns } = await b.client.from("course_meetings").insert({ course_id: courseId, weekday: 2 });
+  check("non-member cannot add class times", !!bMeetIns);
   const { error: bInvErr } = await b.client.from("course_invites").insert({ course_id: courseId, role: "editor" });
   check("non-member cannot create invites", !!bInvErr);
 
@@ -103,6 +111,10 @@ async function run(a: { id: string; client: SupabaseClient }, b: { id: string; c
   check("viewer can see course", bCourse?.length === 1);
   const { data: upd } = await b.client.from("units").update({ title: "changed" }).eq("id", i1.unit_id).select("id");
   check("viewer cannot edit units", (upd ?? []).length === 0);
+  const { data: vMeet } = await b.client.from("course_meetings").select("id").eq("course_id", courseId);
+  check("viewer can see class schedule", vMeet?.length === 2);
+  const { error: vMeetIns } = await b.client.from("course_meetings").insert({ course_id: courseId, weekday: 2 });
+  check("viewer cannot add class times", !!vMeetIns);
   const { data: invList } = await b.client.from("course_invites").select("code").eq("course_id", courseId);
   check("viewer cannot list invites", (invList ?? []).length === 0);
   const { data: selfPromote } = await b.client.from("course_members").update({ role: "editor" }).eq("course_id", courseId).eq("user_id", b.id).select("user_id");
@@ -128,6 +140,8 @@ async function run(a: { id: string; client: SupabaseClient }, b: { id: string; c
   check("owner can promote member", promo?.length === 1);
   const { data: edited } = await b.client.from("units").update({ title: "edited by B" }).eq("id", i1.unit_id).select("id");
   check("editor can edit units", edited?.length === 1);
+  const { error: eMeetIns } = await b.client.from("course_meetings").insert({ course_id: courseId, weekday: 5, start_time: "13:00" });
+  check("editor can add class times", !eMeetIns, eMeetIns);
   const { data: ownerChange } = await b.client.from("courses").update({ owner_id: b.id, title: "B owns?" }).eq("id", courseId).select("owner_id");
   check("owner_id cannot be changed by update", ownerChange?.[0]?.owner_id === a.id, ownerChange);
   const { data: del } = await b.client.from("courses").delete().eq("id", courseId).select("id");
