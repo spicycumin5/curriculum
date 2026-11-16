@@ -75,3 +75,25 @@ export function collectDeadlines(courses: CourseWithContent[], done: ReadonlySet
   }
   return out.sort((a, b) => a.due.localeCompare(b.due) || a.kind.localeCompare(b.kind) || a.title.localeCompare(b.title));
 }
+
+export interface NextItem {
+  id: string;
+  title: string;
+  kind: ItemKind;
+  url: string | null;
+  due: string | null;
+  unitTitle: string;
+}
+
+/** The next `n` unfinished items of a course: earliest effective due first, then course order (undated last). */
+export function nextItems(course: { units: UnitWithItems[] }, done: ReadonlySet<string>, n = 3): NextItem[] {
+  const all: NextItem[] = [];
+  for (const u of course.units) {
+    for (const i of u.items) {
+      if (done.has(i.id)) continue;
+      all.push({ id: i.id, title: i.title, kind: i.kind, url: i.url, due: effectiveDue(i, u), unitTitle: u.title });
+    }
+  }
+  // Array.prototype.sort is stable, so ties keep unit/item order.
+  return all.sort((a, b) => (a.due ?? "9999-12-31").localeCompare(b.due ?? "9999-12-31")).slice(0, n);
+}

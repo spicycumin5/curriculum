@@ -1,12 +1,13 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { CourseWithContent, Item, Role, UnitWithItems } from "./types";
+import type { CourseWithContent, Item, Meeting, Role, UnitWithItems } from "./types";
 
 // item_progress is RLS-filtered to the current user, so a non-empty array = "I completed it".
 // Embedding progress in the course query also avoids PostgREST's top-level row cap.
 const COURSE_SELECT = `
   id, owner_id, title, description, color, start_date, end_date, created_at,
   course_members!inner(user_id, role),
+  course_meetings(id, course_id, weekday, start_time, end_time, location),
   units(
     id, course_id, title, description, position, start_date, due_date,
     items(id, unit_id, title, kind, url, notes, est_minutes, due_date, position, item_progress(item_id))
@@ -50,8 +51,11 @@ export async function getCourses(
         return { ...(u as object), items } as UnitWithItems;
       })
       .sort(byPosition);
-    const { course_members: _m, units: _u, ...course } = row;
-    return { ...(course as object), role: members[0]?.role ?? "viewer", units } as CourseWithContent;
+    const { course_members: _m, units: _u, course_meetings, ...course } = row;
+    const meetings = ((course_meetings as Meeting[]) ?? []).sort(
+      (a, b) => a.weekday - b.weekday || (a.start_time ?? "").localeCompare(b.start_time ?? ""),
+    );
+    return { ...(course as object), role: members[0]?.role ?? "viewer", units, meetings } as CourseWithContent;
   });
   return { courses, done };
 }

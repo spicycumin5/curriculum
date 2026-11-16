@@ -1,5 +1,6 @@
 import { z } from "zod";
-import type { Course, UnitWithItems } from "../types";
+import type { Course, Meeting, UnitWithItems } from "../types";
+import { DAY_KEYS, dayNumberToKey, hhmm } from "../schedule";
 
 /**
  * Course import/export format. Single source of truth for:
@@ -18,6 +19,17 @@ export const isoDate = z
   }, "Not a real date");
 
 const optionalText = (max: number) => z.string().trim().max(max).nullish();
+
+export const clockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use 24-hour HH:MM");
+
+export const meetingJson = z
+  .object({
+    day: z.enum(DAY_KEYS),
+    start: clockTime.nullish(),
+    end: clockTime.nullish(),
+    location: optionalText(300),
+  })
+  .refine((m) => !m.start || !m.end || m.end > m.start, { message: "end must be after start", path: ["end"] });
 
 export const itemJson = z.object({
   title: z.string().trim().min(1, "Title is required").max(300),
@@ -52,6 +64,7 @@ export const courseJson = z
       .nullish(),
     start_date: isoDate.nullish(),
     end_date: isoDate.nullish(),
+    schedule: z.array(meetingJson).max(50).default([]),
     units: z.array(unitJson).max(200).default([]),
   })
   .refine((c) => !c.start_date || !c.end_date || c.end_date >= c.start_date, {
@@ -62,6 +75,7 @@ export const courseJson = z
 export type CourseJson = z.infer<typeof courseJson>;
 export type UnitJson = z.infer<typeof unitJson>;
 export type ItemJson = z.infer<typeof itemJson>;
+export type MeetingJson = z.infer<typeof meetingJson>;
 
 /** Human-readable list of validation problems, e.g. "units.2.items.0.url: URL must start with http..." */
 export function formatIssues(error: z.ZodError): string[] {
@@ -88,7 +102,7 @@ function compact<T extends Record<string, unknown>>(obj: T): Partial<T> {
   ) as Partial<T>;
 }
 
-export function toCourseJson(course: Course, units: UnitWithItems[]) {
+export function toCourseJson(course: Course, units: UnitWithItems[], meetings: Meeting[] = []) {
   return {
     version: 1 as const,
     ...compact({
@@ -98,6 +112,13 @@ export function toCourseJson(course: Course, units: UnitWithItems[]) {
       start_date: course.start_date,
       end_date: course.end_date,
     }),
+    ...(meetings.length
+      ? {
+          schedule: [...meetings]
+            .sort((a, b) => a.weekday - b.weekday || (a.start_time ?? "").localeCompare(b.start_time ?? ""))
+            .map((m) => compact({ day: dayNumberToKey(m.weekday), start: hhmm(m.start_time), end: hhmm(m.end_time), location: m.location })),
+        }
+      : {}),
     units: [...units]
       .sort((a, b) => a.position - b.position)
       .map((u) => ({

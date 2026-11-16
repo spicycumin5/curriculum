@@ -37,6 +37,15 @@ export interface Item {
   position: number;
 }
 
+export interface Meeting {
+  id: string;
+  course_id: string;
+  weekday: number; // ISO 1 = Monday … 7 = Sunday
+  start_time: string | null; // "HH:MM:SS"
+  end_time: string | null;
+  location: string | null;
+}
+
 export interface UnitWithItems extends Unit {
   items: Item[];
 }
@@ -44,6 +53,7 @@ export interface UnitWithItems extends Unit {
 export interface CourseWithContent extends Course {
   role: Role;
   units: UnitWithItems[];
+  meetings: Meeting[];
 }
 
 export type ActionResult = { error?: string; ok?: boolean } | undefined;

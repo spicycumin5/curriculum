@@ -46,6 +46,7 @@ describe("progress", () => {
     end_date: null,
     created_at: "",
     role: "owner",
+    meetings: [],
     units: [
       {
         id: "u1",
