@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "title": "Linear Algebra: Intuition First",
+  "description": "A 4-week sampler: geometric intuition from 3Blue1Brown, then practice with MIT 18.06SC problem sets. About 4–5 hours per week.",
+  "color": "#3d5a80",
+  "start_date": "2026-12-01",
+  "end_date": "2026-12-28",
+  "units": [
+    {
+      "title": "Vectors, span and linear combinations",
+      "description": "What a vector is, what it means to combine them, and what they can reach.",
+      "start_date": "2026-12-01",
+      "due_date": "2026-12-07",
+      "items": [
+        { "title": "Essence of Linear Algebra, ch. 1–2", "kind": "watch", "url": "https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab", "est_minutes": 25 },
+        { "title": "Immersive Linear Algebra, ch. 2 (Vectors)", "kind": "read", "url": "https://immersivemath.com/ila/index.html", "est_minutes": 60 },
+        { "title": "Khan Academy: Vectors and spaces exercises", "kind": "do", "url": "https://www.khanacademy.org/math/linear-algebra", "est_minutes": 90 },
+        { "title": "Write a one-paragraph explanation of 'span' in your own words", "kind": "do", "est_minutes": 15 }
+      ]
+    },
+    {
+      "title": "Linear transformations and matrices",
+      "start_date": "2026-12-08",
+      "due_date": "2026-12-14",
+      "items": [
+        { "title": "Essence of Linear Algebra, ch. 3–4", "kind": "watch", "url": "https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab", "est_minutes": 25 },
+        { "title": "MIT 18.06SC: The geometry of linear equations (lecture + problem set)", "kind": "do", "url": "https://ocw.mit.edu/courses/18-06sc-linear-algebra-fall-2011/", "est_minutes": 120 }
+      ]
+    },
+    {
+      "title": "Determinants, inverses and rank",
+      "start_date": "2026-12-15",
+      "due_date": "2026-12-21",
+      "items": [
+        { "title": "Essence of Linear Algebra, ch. 5–7", "kind": "watch", "url": "https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab", "est_minutes": 35 },
+        { "title": "MIT 18.06SC: Elimination with matrices; inverses", "kind": "do", "url": "https://ocw.mit.edu/courses/18-06sc-linear-algebra-fall-2011/", "est_minutes": 150 }
+      ]
+    },
+    {
+      "title": "Eigenvectors and eigenvalues",
+      "start_date": "2026-12-22",
+      "due_date": "2026-12-28",
+      "items": [
+        { "title": "Essence of Linear Algebra, ch. 14", "kind": "watch", "url": "https://www.youtube.com/playlist?list=PLZHQObOWTQDPD3MizzM2xVFitgF8hE_ab", "est_minutes": 20 },
+        { "title": "Linear Algebra Done Right, ch. 5 (free PDF)", "kind": "read", "url": "https://linear.axler.net/", "est_minutes": 120 },
+        { "title": "Review: re-derive one result from each unit without notes", "kind": "do", "est_minutes": 60, "due_date": "2026-12-28" }
+      ]
+    }
+  ]
+}
