@@ -4,8 +4,17 @@ import { useState, useTransition } from "react";
 import { useFormStatus } from "react-dom";
 import type { ActionResult } from "@/lib/types";
 
-export function SubmitButton({ children, className = "btn btn-primary" }: { children: React.ReactNode; className?: string }) {
-  const { pending } = useFormStatus();
+export function SubmitButton({
+  children,
+  className = "btn btn-primary",
+  pending: pendingProp,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  pending?: boolean;
+}) {
+  const status = useFormStatus();
+  const pending = pendingProp ?? status.pending;
   return (
     <button type="submit" className={className} disabled={pending}>
       {pending ? "Saving…" : children}

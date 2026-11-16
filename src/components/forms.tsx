@@ -1,38 +1,26 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
-import type { ActionResult, Course, Item, Unit } from "@/lib/types";
+import type { Course, Item, Unit } from "@/lib/types";
 import { ITEM_KINDS } from "@/lib/types";
+import { ScheduleFields } from "./schedule";
 import { FormError, SubmitButton } from "./ui";
+import { useForm, type FormAction } from "./useForm";
 
-type FormAction = (prev: ActionResult, fd: FormData) => Promise<ActionResult>;
-
-/** useActionState + reset/close on success. */
-function useForm(action: FormAction, { reset, onDone }: { reset: boolean; onDone?: () => void }) {
-  const [state, formAction] = useActionState(action, undefined);
-  const ref = useRef<HTMLFormElement>(null);
-  useEffect(() => {
-    if (state?.ok) {
-      if (reset) ref.current?.reset();
-      onDone?.();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state]);
-  return { state, formAction, ref };
-}
 
 export function CourseForm({
   action,
   initial,
   submitLabel,
+  withSchedule = false,
 }: {
   action: FormAction;
   initial?: Partial<Course>;
   submitLabel: string;
+  withSchedule?: boolean;
 }) {
-  const { state, formAction, ref } = useForm(action, { reset: false });
+  const { state, pending, formProps } = useForm(action, { reset: false });
   return (
-    <form ref={ref} action={formAction} className="grid gap-4">
+    <form {...formProps} className="grid gap-4">
       <div>
         <label className="label" htmlFor="c-title">Title</label>
         <input id="c-title" name="title" required maxLength={200} className="input" defaultValue={initial?.title} placeholder="e.g. Intro to Linear Algebra" />
@@ -55,10 +43,20 @@ export function CourseForm({
           <input id="c-color" type="color" name="color" className="input h-[38px] p-1" defaultValue={initial?.color ?? "#3d5a80"} />
         </div>
       </div>
+      {withSchedule && (
+        <div className="rounded-lg border border-line bg-surface-2/40 p-3">
+          <p className="mb-2 text-sm font-medium">Weekly class schedule</p>
+          <p className="mb-3 text-xs text-muted">
+            Pick the days you&apos;ll study this course. They show up on your dashboard, week view and calendar. You can add more times
+            (e.g. a different time on Fridays) later in Settings.
+          </p>
+          <ScheduleFields idPrefix="new" />
+        </div>
+      )}
       <FormError state={state} />
       {state?.ok && <p className="text-sm text-ok">Saved.</p>}
       <div>
-        <SubmitButton>{submitLabel}</SubmitButton>
+        <SubmitButton pending={pending}>{submitLabel}</SubmitButton>
       </div>
     </form>
   );
@@ -77,9 +75,9 @@ export function UnitForm({
   onDone?: () => void;
   onCancel?: () => void;
 }) {
-  const { state, formAction, ref } = useForm(action, { reset: !initial, onDone });
+  const { state, pending, formProps } = useForm(action, { reset: !initial, onDone });
   return (
-    <form ref={ref} action={formAction} className="grid gap-3">
+    <form {...formProps} className="grid gap-3">
       <input name="title" required maxLength={200} className="input" defaultValue={initial?.title} placeholder="Unit title, e.g. Vectors & spans" aria-label="Unit title" />
       <textarea name="description" rows={2} maxLength={5000} className="input" defaultValue={initial?.description ?? ""} placeholder="Goals for this unit (optional)" aria-label="Unit description" />
       <div className="grid grid-cols-2 gap-3">
@@ -94,7 +92,7 @@ export function UnitForm({
       </div>
       <FormError state={state} />
       <div className="flex gap-2">
-        <SubmitButton className="btn btn-primary btn-sm">{submitLabel}</SubmitButton>
+        <SubmitButton className="btn btn-primary btn-sm" pending={pending}>{submitLabel}</SubmitButton>
         {onCancel && (
           <button type="button" className="btn btn-sm" onClick={onCancel}>
             {initial ? "Cancel" : "Close"}
@@ -118,9 +116,9 @@ export function ItemForm({
   onDone?: () => void;
   onCancel?: () => void;
 }) {
-  const { state, formAction, ref } = useForm(action, { reset: !initial, onDone });
+  const { state, pending, formProps } = useForm(action, { reset: !initial, onDone });
   return (
-    <form ref={ref} action={formAction} className="grid gap-3 rounded-lg border border-dashed border-line p-3">
+    <form {...formProps} className="grid gap-3 rounded-lg border border-dashed border-line p-3">
       <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
         <input name="title" required maxLength={300} className="input" defaultValue={initial?.title} placeholder="Resource or task, e.g. Read chapter 2" aria-label="Item title" />
         <select name="kind" className="input" defaultValue={initial?.kind ?? "read"} aria-label="Kind">
@@ -145,7 +143,7 @@ export function ItemForm({
       <textarea name="notes" rows={2} maxLength={5000} className="input" defaultValue={initial?.notes ?? ""} placeholder="Notes (optional)" aria-label="Notes" />
       <FormError state={state} />
       <div className="flex gap-2">
-        <SubmitButton className="btn btn-primary btn-sm">{submitLabel}</SubmitButton>
+        <SubmitButton className="btn btn-primary btn-sm" pending={pending}>{submitLabel}</SubmitButton>
         {onCancel && (
           <button type="button" className="btn btn-sm" onClick={onCancel}>
             {initial ? "Cancel" : "Close"}
